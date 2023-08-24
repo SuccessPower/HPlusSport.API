@@ -25,7 +25,7 @@ namespace HPlusSport.API.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult>GetProduct(int id)
+        public async Task<ActionResult> GetProduct(int id)
         {
             var product = await _context.Products.FindAsync(id);
             if (product == null)
@@ -36,15 +36,63 @@ namespace HPlusSport.API.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> PostProduct(Product product)
+        public async Task<ActionResult<Product>> PostProduct(Product product)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
             _context.Products.Add(product);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
             return CreatedAtAction(
-                "GetProduct", 
-                new {Id = product.Id}, 
+                "GetProduct",
+                new { Id = product.Id },
                 product);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<ActionResult> PutProduct(int id, [FromBody] Product product)
+        {
+            if(id != product.Id)
+            {
+                return BadRequest();
+            }
+
+            _context.Entry(product).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+
+                if(!_context.Products.Any(p => p.Id == id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<ActionResult<Product>> DeleteProduct(int id)
+        {
+            var product = await _context.Products.FindAsync(id);
+            if (product == null )
+            {
+                return NotFound();
+            }
+
+            _context.Products.Remove(product);
+            await _context.SaveChangesAsync();
+            return product;
         }
     }
 }
